@@ -1,0 +1,24 @@
+<Application x:Class="MizanPro.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:MizanPro.Converters">
+
+    <!-- لا يوجد StartupUri: تسلسل التشغيل يُدار يدوياً داخل App.xaml.cs
+         (شاشة بداية ← فحص حالة المنتج ← تسجيل الدخول ← النافذة الرئيسية) -->
+    <Application.Resources>
+        <ResourceDictionary>
+
+            <!-- الألوان والأنماط العامة -->
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- محوّلات القيم للعرض العربي -->
+            <converters:InvoiceStatusToTextConverter x:Key="InvoiceStatusText" />
+            <converters:InvoiceTypeToTextConverter x:Key="InvoiceTypeText" />
+            <converters:BooleanToStateTextConverter x:Key="BooleanStateText" />
+
+        </ResourceDictionary>
+    </Application.Resources>
+
+</Application>

@@ -1,0 +1,25 @@
+════════════════════════════════════════════════
+  أدوات ورشة كسر الحماية — ميزان Pro
+  حمّلها قبل المحاضرة
+════════════════════════════════════════════════
+
+1) dnSpy — مصحح ومحرر تجميعات .NET
+   الرابط: https://github.com/dnSpy/dnSpy/releases
+   الحجم: ~25 MB
+
+2) Process Monitor — مراقبة عمليات Registry والملفات (Sysinternals)
+   الرابط: https://learn.microsoft.com/sysinternals/downloads/procmon
+   الحجم: ~3 MB
+
+3) x32dbg — مصحح على مستوى الأكواد الآلية (x64dbg)
+   الرابط: https://x64dbg.com
+   الحجم: ~15 MB
+
+4) Python 3.x — لكتابة مولّد المفاتيح (Keygen)
+   الرابط: https://python.org/downloads
+   الحجم: ~25 MB
+
+ملاحظات:
+- يعمل MizanPro.exe على Windows 10/11 (32/64-بت) بدون أي متطلبات إضافية.
+- لفك تشفير ملف state.enc في التجربة الاختيارية:
+  pip install pycryptodome

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    مشروع الفحص التشغيلي (Smoke Test) — يُستخدم داخل GitHub Actions فقط
+    (يُنسخ إلى مجلد مؤقت خارج المستودع ويُشغَّل بعد البناء للتحقق من عمل
+    قاعدة البيانات والخدمات ومحرك التفعيل فعلياً على ويندوز).
+    __MAIN_PROJECT__ يُستبدل بمسار MizanPro.csproj داخل الـ workflow.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>MizanPro.SmokeTest</AssemblyName>
+    <RootNamespace>MizanPro.SmokeTest</RootNamespace>
+
+    <!-- مطابقة إعداد المشروع الرئيسي (SelfContained + win-x86):
+         يمنع خطأ NETSDK1151 (مشروع مكتفٍ يُشار إليه من غير مكتفٍ)
+         ويجعل الملف التنفيذي الناتج مكتفياً ذاتياً فيعمل عبر WOW64 على العدّاء. -->
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="__MAIN_PROJECT__" />
+  </ItemGroup>
+
+</Project>
