@@ -108,4 +108,23 @@ dotnet run            # أو افتح المجلد في Visual Studio 2022 وا�
 
 - `.github/workflows/build.yml` — بناء على Windows + **فحص تشغيلي فعلي** يشغّل
   قاعدة البيانات والخدمات ومحرك التفعيل ويتحقق من النتائج (23 فحصاً).
-- `.github/workflows/generate-migrations.yml` — توليد ملفات EF Migrations عبر `dotnet-ef`.
+
+## ملاحظات للمطوّر
+
+### الـ Migrations
+ملفات `Data/Migrations` **مولَّدة ومُضمَّنة في المستودع** (أُنشئت بأداة `dotnet-ef 7.0.20`)،
+و`App.xaml.cs` يطبّقها تلقائياً عند أول تشغيل عبر `Database.MigrateAsync()`.
+
+لتوليد Migration جديدة محلياً:
+```bash
+dotnet tool install --global dotnet-ef --version 7.0.20
+dotnet ef migrations add اسم_الترحيل --output-dir Data/Migrations
+```
+> **تنبيه:** أداة dotnet-ef تعمل بعملية 64-بت وقد ترفض تحميل تجميعة x86
+> ("Could not load assembly"). إن حدث ذلك غيّر `PlatformTarget` مؤقتاً إلى
+> `AnyCPU` أثناء التوليد ثم أعده إلى `x86` — محتوى الـ Migration لا يتأثر إطلاقاً
+> (هذا ما يفعله سير العمل في GitHub Actions تلقائياً).
+
+### لماذا x86 مع Optimize=false وDebugType=none؟
+هذه الإعدادات مقصودة لغرض المادة: إخراج ملف تنفيذي 32-بت بلا تحسين وبلا رموز تصحيح
+يجعل تحليله الهندسي العكسي (تفكيك، نقاط توقف، فحص الذاكرة) أوضح وأسهل.
