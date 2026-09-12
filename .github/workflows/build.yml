@@ -100,7 +100,21 @@ jobs:
           (Get-Content $csproj -Raw).Replace("__MAIN_PROJECT__", $mainProject) | Set-Content $csproj
 
           $output = Join-Path $env:RUNNER_TEMP "smoke-output.txt"
-          dotnet run --project $csproj --verbosity quiet --nologo 2>&1 | Tee-Object -FilePath $output
+
+          # ملاحظة معمارية: مشروع ميزان بُني x86 في خطوة البناء أعلاه (كما في المواصفة)،
+          # لكن عدّاء GitHub Actions لا يملك وقت تشغيل 32-بت، لذا يُبنى مشروع الفحص
+          # (والمشروع المُشار إليه) بخصيصة AnyCPU العمومية — وهذا لا يغيّر أي منطق مُختبَر.
+          dotnet build $csproj -c Debug -p:PlatformTarget=AnyCPU --verbosity minimal --nologo 2>&1 |
+            Tee-Object -FilePath $output
+          if ($LASTEXITCODE -ne 0) {
+            Get-Content $output | Select-Object -Last 10 | ForEach-Object {
+              Write-Output ("::error::" + ($_ -replace "`t", " "))
+            }
+            exit 1
+          }
+
+          $smokeDll = Join-Path $smokeDir "bin\Debug\net6.0-windows\MizanPro.SmokeTest.dll"
+          dotnet $smokeDll 2>&1 | Tee-Object -FilePath $output
           $code = $LASTEXITCODE
 
           if ($code -ne 0) {
