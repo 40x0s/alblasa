@@ -95,6 +95,9 @@ jobs:
           New-Item -ItemType Directory -Force -Path $smokeDir | Out-Null
           Copy-Item ".github/smoke/*" -Destination $smokeDir -Recurse -Force
 
+          # مسح مخرجات البناء السابقة (x86) حتى تُعاد ترجمة MizanPro بمعمارية AnyCPU
+          Remove-Item -Recurse -Force "bin", "obj" -ErrorAction SilentlyContinue
+
           $csproj = Join-Path $smokeDir "Smoke.csproj"
           $mainProject = Join-Path $env:GITHUB_WORKSPACE "MizanPro.csproj"
           (Get-Content $csproj -Raw).Replace("__MAIN_PROJECT__", $mainProject) | Set-Content $csproj
