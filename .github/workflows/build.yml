@@ -52,8 +52,28 @@ jobs:
           dotnet tool install --global dotnet-ef --version 7.0.20 2>&1 | Tee-Object -FilePath $log
           if ($LASTEXITCODE -ne 0) { Show-Failure $log }
 
-          dotnet ef migrations add InitialCreate --output-dir Data/Migrations 2>&1 | Tee-Object -FilePath $log
-          if ($LASTEXITCODE -ne 0) { Show-Failure $log }
+          Write-Host "=== Attempt 1: dotnet ef (project as-is) ==="
+          dotnet ef migrations add InitialCreate --output-dir Data/Migrations --verbose 2>&1 | Tee-Object -FilePath $log
+
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "=== Attempt 2: retry with temporary AnyCPU ==="
+            Write-Host "(dotnet-ef runs as a 64-bit process and cannot load x86-flagged assemblies;"
+            Write-Host " PlatformTarget does not affect the generated migration content)"
+
+            $csproj = "MizanPro.csproj"
+            $original = Get-Content $csproj -Raw
+            $original.Replace("<PlatformTarget>x86</PlatformTarget>", "<PlatformTarget>AnyCPU</PlatformTarget>") | Set-Content $csproj
+
+            try {
+              dotnet ef migrations add InitialCreate --output-dir Data/Migrations 2>&1 | Tee-Object -FilePath $log
+            }
+            finally {
+              # إرجاع الملف الأصلي مهما حدث
+              Set-Content -Path $csproj -Value $original -NoNewline
+            }
+
+            if ($LASTEXITCODE -ne 0) { Show-Failure $log }
+          }
 
           if (-Not (Test-Path "Data/Migrations")) { Show-Failure $log }
 
