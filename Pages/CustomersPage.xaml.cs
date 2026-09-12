@@ -74,7 +74,7 @@ namespace MizanPro.Pages
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "تعذّر تحميل العملاء: " + ex.Message, "ميزان برو",
+                MessageBox.Show("تعذّر تحميل العملاء: " + ex.Message, "ميزان برو",
                     MessageBoxButton.OK, MessageBoxImage.Warning,
                     MessageBoxResult.OK, MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign);
             }

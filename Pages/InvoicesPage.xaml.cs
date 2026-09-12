@@ -185,7 +185,7 @@ namespace MizanPro.Pages
                 "الإجمالي: " + invoice.Total.ToString("N2") + " ر.س" +
                     (string.IsNullOrWhiteSpace(invoice.Notes) ? "" : "\n\nملاحظات: " + invoice.Notes);
 
-            MessageBox.Show(this, details, "تفاصيل الفاتورة " + invoice.InvoiceNumber,
+            MessageBox.Show(details, "تفاصيل الفاتورة " + invoice.InvoiceNumber,
                 MessageBoxButton.OK, MessageBoxImage.Information,
                 MessageBoxResult.OK, MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign);
         }
@@ -197,7 +197,7 @@ namespace MizanPro.Pages
 
             if (invoice.Status != InvoiceStatus.Issued)
             {
-                MessageBox.Show(this,
+                MessageBox.Show(
                     "يمكن تعليم الفواتير الصادرة فقط كمدفوعة.\nحالة الفاتورة الحالية: " + InvoiceStatusText(invoice.Status),
                     "ميزان برو",
                     MessageBoxButton.OK, MessageBoxImage.Information,
@@ -205,7 +205,7 @@ namespace MizanPro.Pages
                 return;
             }
 
-            var result = MessageBox.Show(this,
+            var result = MessageBox.Show(
                 "هل تريد تعليم الفاتورة " + invoice.InvoiceNumber + " (بمبلغ " + invoice.Total.ToString("N2") + " ر.س) كمدفوعة؟",
                 "تأكيد السداد",
                 MessageBoxButton.YesNo, MessageBoxImage.Question,
@@ -230,7 +230,7 @@ namespace MizanPro.Pages
             if (((FrameworkElement)sender).DataContext is not Invoice invoice)
                 return;
 
-            MessageBox.Show(this,
+            MessageBox.Show(
                 "تم إرسال الفاتورة " + invoice.InvoiceNumber + " إلى قائمة الطباعة.\n" +
                 "(معاينة الطباعة غير متاحة في هذه النسخة التعليمية)",
                 "طباعة",
@@ -266,7 +266,7 @@ namespace MizanPro.Pages
         };
 
         private void ShowError(string message)
-            => MessageBox.Show(this, message, "ميزان برو",
+            => MessageBox.Show(message, "ميزان برو",
                 MessageBoxButton.OK, MessageBoxImage.Warning,
                 MessageBoxResult.OK, MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign);
     }
