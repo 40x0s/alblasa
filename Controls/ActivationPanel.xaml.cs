@@ -1,7 +1,5 @@
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using MizanPro.Core.Licensing;
+using MizanPro.Core.Engine;
 
 namespace MizanPro.Controls
 {
@@ -25,20 +23,13 @@ namespace MizanPro.Controls
 
             try
             {
-                var (ok, error) = await ProductStateEngine.ActivateAsync(KeyBox.Text);
+                var (ok, message) = await ProductStateEngine.Instance.CommitActivation(KeyBox.Text);
+
+                MessageText.Text = message;
+                MessageText.Foreground = (Brush)FindResource(ok ? "SuccessBrush" : "DangerBrush");
 
                 if (ok)
-                {
-                    MessageText.Text = "تم تفعيل البرنامج بنجاح — شكراً لك.";
-                    MessageText.Foreground = (Brush)FindResource("SuccessBrush");
-
                     ActivationSucceeded?.Invoke(this, EventArgs.Empty);
-                }
-                else
-                {
-                    MessageText.Text = error ?? "تعذّر التفعيل.";
-                    MessageText.Foreground = (Brush)FindResource("DangerBrush");
-                }
             }
             finally
             {

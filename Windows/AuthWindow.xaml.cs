@@ -1,43 +1,42 @@
 using System.Windows;
 using System.Windows.Input;
-using MizanPro.Core.Licensing;
+using MizanPro.Core.Engine;
 using MizanPro.Core.Services;
 
 namespace MizanPro.Windows
 {
     /// <summary>
-    /// نافذة تسجيل الدخول — تحتوي أيضاً على لوحة التفعيل التي تُعرض تلقائياً
-    /// إذا كانت حالة المنتج "يحتاج تفعيل".
+    /// نافذة تسجيل الدخول — تحتوي أيضاً على لوحة التفعيل التي تُعرض عند الحاجة
+    /// (أو عبر زر "لديّ مفتاح تفعيل").
     /// </summary>
     public partial class AuthWindow : Window
     {
-        private readonly ProductStateResult? _productState;
-
         /// <param name="needsActivation">
         /// true ← عرض لوحة التفعيل مباشرة بدلاً من نموذج الدخول.
         /// </param>
-        /// <param name="productState">نتيجة فحص حالة المنتج (لعرض رسالة التجربة/التفعيل).</param>
-        public AuthWindow(bool needsActivation, ProductStateResult? productState = null)
+        public AuthWindow(bool needsActivation = false)
         {
             InitializeComponent();
 
-            _productState = productState;
-
-            // عرض رسالة حالة الترخيص في الشريط الجانبي
-            if (!string.IsNullOrWhiteSpace(productState?.Message))
-            {
-                TrialText.Text = productState.Message;
-                TrialBanner.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                TrialBanner.Visibility = Visibility.Collapsed;
-            }
+            SetupLicenseBanner();
 
             if (needsActivation)
                 ShowActivationPanel();
 
             Loaded += (_, _) => UsernameBox.Focus();
+        }
+
+        /// <summary>
+        /// شريط حالة الترخيص في اللوحة التعريفية:
+        /// يعرض الخطة الحالية (PRO) أو الأيام المتبقية من التجربة.
+        /// </summary>
+        private void SetupLicenseBanner()
+        {
+            TrialText.Text = ProductStateEngine.Plan == "PRO"
+                ? "النسخة مفعّلة — ميزان Pro"
+                : $"فترة تجريبية مجانية — متبقٍ {ProductStateEngine.TrialDaysLeft} من {ProductStateEngine.TrialPeriodDays} أيام";
+
+            TrialBanner.Visibility = Visibility.Visible;
         }
 
         // ─────────────── تسجيل الدخول ───────────────
@@ -92,8 +91,7 @@ namespace MizanPro.Windows
         private void ActivationPanelControl_ActivationSucceeded(object? sender, EventArgs e)
         {
             // بعد التفعيل الناجح: تحديث الشريط ثم العودة لنموذج الدخول
-            TrialText.Text = "تم تفعيل البرنامج بنجاح — يمكنك تسجيل الدخول الآن.";
-            TrialBanner.Visibility = Visibility.Visible;
+            SetupLicenseBanner();
             ShowLoginPanel();
         }
 

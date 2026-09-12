@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using MizanPro.Core;
-using MizanPro.Core.Licensing;
+using MizanPro.Core.Engine;
 using MizanPro.Core.Services;
 using MizanPro.Data;
 using MizanPro.Windows;
@@ -61,7 +61,9 @@ namespace MizanPro
                 }
 
                 // ══════════ 2) فحص حالة المنتج (تجربة / تفعيل) ══════════
-                var state = await ProductStateEngine.EvaluateCurrentState();
+                // true  = نسخة PRO أو مسار احتياطي صالح أو تجربة متبقية
+                // false = انتهت الفترة التجريبية (7 أيام) بدون تفعيل صالح
+                bool canRun = ProductStateEngine.Instance.EvaluateCurrentState();
 
                 // إبقاء شاشة البداية ظاهرة 3 ثوانٍ على الأقل منذ لحظة ظهورها
                 var remainingMs = SplashDurationMs - (int)stopwatch.ElapsedMilliseconds;
@@ -69,12 +71,12 @@ namespace MizanPro
                     await Task.Delay(remainingMs);
 
                 // انتهت الفترة التجريبية ولم يتم التفعيل → إغلاق التطبيق
-                if (state.State == ProductState.TrialExpired)
+                if (!canRun)
                 {
                     splash.Close();
 
                     MessageBox.Show(
-                        "انتهت الفترة التجريبية المجانية (14 يوماً).\n" +
+                        "انتهت الفترة التجريبية المجانية (7 أيام).\n" +
                         "الرجاء التواصل مع المورّد للحصول على مفتاح تفعيل صالح.",
                         "ميزان برو",
                         MessageBoxButton.OK,
@@ -87,12 +89,10 @@ namespace MizanPro
                 }
 
                 // ══════════ 3) تسجيل الدخول ══════════
-                // "يحتاج تفعيل" → نافذة الدخول تُعرض ولوحة التفعيل ظاهرة داخلها
-                bool needsActivation = state.State == ProductState.ActivationRequired;
-
-                // ملاحظة مهمة: نعرض نافذة الدخول قبل إغلاق شاشة البداية،
-                // لأن وضع الإيقاف الافتراضي (OnLastWindowClose) يغلق التطبيق عند إغلاق آخر نافذة.
-                var auth = new AuthWindow(needsActivation, state);
+                // canRun == true: النسخة مفعّلة (PRO) أو داخل الفترة التجريبية.
+                // لوحة التفعيل متاحة دائماً داخل نافذة الدخول عبر زر
+                // "لديّ مفتاح تفعيل" — لذا نمرر needsActivation: false هنا.
+                var auth = new AuthWindow(needsActivation: false);
                 auth.Show();
                 splash.Close();
 

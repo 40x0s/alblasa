@@ -14,8 +14,8 @@ namespace MizanPro.Core
         /// <summary>ملف قاعدة البيانات SQLite.</summary>
         public static string DatabaseFilePath => Path.Combine(AppDataFolder, "mizan.db");
 
-        /// <summary>ملف الترخيص (حالة التجربة والتفعيل).</summary>
-        public static string LicenseFilePath => Path.Combine(AppDataFolder, "license.json");
+        /// <summary>ملف حالة الترخيص المشفّر (AES-128) — يكتبه ProductStateEngine.</summary>
+        public static string StateFilePath => Path.Combine(AppDataFolder, "state.enc");
 
         /// <summary>يضمن وجود مجلد بيانات البرنامج قبل أي عملية كتابة.</summary>
         public static void EnsureAppDataFolder() => Directory.CreateDirectory(AppDataFolder);

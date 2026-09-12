@@ -2,7 +2,8 @@
 // فحص تشغيلي (Smoke Test) لميزان برو — يُنفَّذ داخل GitHub Actions فقط.
 // يتحقق فعلياً من: قاعدة البيانات + الـ Migrations + البيانات التجريبية +
 // تسجيل الدخول + إنشاء الفواتير (الضريبة والمخزون) + تحديث الحالة +
-// التقارير والإحصاءات + تغيير كلمة المرور + محرك التجربة والتفعيل.
+// التقارير والإحصاءات + تغيير كلمة المرور + محرك الحماية الخفي
+// (TokenProcessor + ProductStateEngine: Registry + state.enc + AES + بصمة الجهاز).
 // ============================================================================
 
 using System;
@@ -13,19 +14,22 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Win32;
 using MizanPro.Core;
-using MizanPro.Core.Licensing;
+using MizanPro.Core.Engine;
 using MizanPro.Core.Services;
 using MizanPro.Data;
 using MizanPro.Models;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace MizanPro.SmokeTest
 {
     internal static class Program
     {
         private static int _failures;
+
+        // مفتاحا تفعيل صحيحان (محسوبان ومُتحقَّق منهما — انظر تعليق TokenProcessor.ParseAndVerify)
+        private const string ValidKeyDashed = "M1Z4N-2025P-ROM4S-T3R01";   // مقروء
+        private const string ValidKeyPlain = "AAAAABBBBBCCCCCADN89";       // من عائلة مثال المواصفة
 
         private static async Task<int> Main()
         {
@@ -111,31 +115,123 @@ namespace MizanPro.SmokeTest
             bool restored = await SessionManager.Instance.ChangePasswordAsync("NewPass@99", "Admin@123");
             Check(changed && !wrongOld && restored, "تغيير كلمة المرور والتحقق منها");
 
-            // ─── 8) محرك الترخيص: تجربة → رفض مفتاح خاطئ → تفعيل صحيح ───
-            ProductStateResult state = await ProductStateEngine.EvaluateCurrentState();
-            Check(state.State == ProductState.TrialActive || state.State == ProductState.Licensed,
-                "الحالة الأولية = تجربة أو مفعّل (فعلي: " + state.State + ")");
-
-            var (badKeyOk, badKeyError) = await ProductStateEngine.ActivateAsync("0000-0000-0000-0000");
-            Check(!badKeyOk, "رفض مفتاح تفعيل خاطئ: " + badKeyError);
-
-            // حساب المفتاح الصحيح بنفس خوارزمية المحرك (SHA256 لمعرّف الجهاز + الملح)
-            string licenseJson = await File.ReadAllTextAsync(MizanPaths.LicenseFilePath);
-            string machineId = JObject.Parse(licenseJson)["machineId"]?.ToString() ?? "";
-            byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(machineId + "MIZAN-PRO-2024-SA"));
-            string validKey = string.Join("-",
-                Enumerable.Range(0, 4).Select(i => hash[i * 2].ToString("X2") + hash[i * 2 + 1].ToString("X2")));
-
-            var (goodKeyOk, goodKeyError) = await ProductStateEngine.ActivateAsync(validKey);
-            Check(goodKeyOk, "قبول المفتاح الصحيح: " + goodKeyError);
-
-            ProductStateResult finalState = await ProductStateEngine.EvaluateCurrentState();
-            Check(finalState.State == ProductState.Licensed,
-                "الحالة بعد التفعيل = مفعّل (فعلي: " + finalState.State + ")");
+            // ─── 8) محرك الحماية الخفي: TokenProcessor + ProductStateEngine ───
+            await RunProtectionEngineChecksAsync();
 
             Console.WriteLine(_failures == 0 ? ">>> ALL CHECKS PASSED <<<" : ">>> " + _failures + " CHECK(S) FAILED <<<");
             return _failures == 0 ? 0 : 1;
         }
+
+        // ═══════════ فحص محرك الحماية (Registry + state.enc + AES + المفاتيح) ═══════════
+
+        private static async Task RunProtectionEngineChecksAsync()
+        {
+            Console.WriteLine("─── محرك الحماية ───");
+
+            // تنظيف أي حالة سابقة: شجرة الـ Registry كاملة + ملف state.enc
+            Registry.CurrentUser.DeleteSubKeyTree(@"Software\MizanSolutions", throwOnMissingSubKey: false);
+            File.Delete(MizanPaths.StateFilePath);
+
+            // 8-أ) خوارزمية التحقق من المفاتيح
+            Check(TokenProcessor.ParseAndVerify(ValidKeyDashed), "قبول المفتاح الصحيح (بالشرطات)");
+            Check(TokenProcessor.ParseAndVerify(ValidKeyPlain), "قبول المفتاح الصحيح (بدون شرطات)");
+            Check(TokenProcessor.ParseAndVerify(ValidKeyDashed.Replace("-", "").ToLowerInvariant()),
+                "قبول المفتاح بأحرف صغيرة (ToUpper قبل الفحص)");
+            Check(!TokenProcessor.ParseAndVerify("AAAAABBBBBCCCCCDE77A"),
+                "رفض مثال المواصفة الأصلي (لا يحقق شرطي المجموع وXOR)");
+            Check(!TokenProcessor.ParseAndVerify("M1Z4N-2025P-ROM4S-T3R0"),     // 19 حرفاً
+                "رفض مفتاح ناقص حرف");
+            Check(!TokenProcessor.ParseAndVerify("M1Z4N-2025P-ROM4S-T3R012"),    // 21 حرفاً
+                "رفض مفتاح زائد حرف");
+            Check(!TokenProcessor.ParseAndVerify("M1Z4N-2025P-ROM4S-T3R0!"),     // محرف غير مسموح
+                "رفض محرف خارج الأبجدية");
+            Check(!TokenProcessor.ParseAndVerify(""), "رفض مفتاح فارغ");
+
+            // 8-ب) بصمة الجهاز بصيغة XXXX-XXXX-XXXX-XXXX (16 خانة hex كبيرة)
+            string fingerprint = TokenProcessor.ComputeMachineFingerprint();
+            Check(System.Text.RegularExpressions.Regex.IsMatch(fingerprint, @"^[0-9A-F]{4}(-[0-9A-F]{4}){3}$"),
+                "صيغة بصمة الجهاز صحيحة: " + fingerprint);
+
+            // 8-ج) أول تشغيل نظيف: تجربة 7 أيام سارية
+            bool firstRun = ProductStateEngine.Instance.EvaluateCurrentState();
+            Check(firstRun, "أول تشغيل: السماح بالعمل (تجربة)");
+            Check(ProductStateEngine.Plan == "TRIAL", "الخطة = TRIAL");
+            Check(!ProductStateEngine.IsVerified, "غير مفعّل بعد");
+            Check(ProductStateEngine.TrialDaysLeft == ProductStateEngine.TrialPeriodDays,
+                "أيام التجربة المتبقية = " + ProductStateEngine.TrialPeriodDays);
+
+            // 8-د) محاكاة تجربة منتهية (تاريخ تركيب قديم)
+            SetRegistryValue("InstallDate", DateTime.Today.AddDays(-10).ToString("yyyyMMdd"));
+            bool expired = ProductStateEngine.Instance.EvaluateCurrentState();
+            Check(!expired, "تجربة منتهية → رفض التشغيل");
+            Check(ProductStateEngine.TrialDaysLeft <= 0, "الأيام المتبقية سالبة");
+
+            // 8-هـ) التفعيل بمفتاح صحيح
+            SetRegistryValue("InstallDate", DateTime.Today.ToString("yyyyMMdd"));
+            var (activationOk, activationMsg) = await ProductStateEngine.Instance.CommitActivation(ValidKeyDashed);
+            Check(activationOk && activationMsg == "تم تفعيل ميزان Pro بنجاح!",
+                "CommitActivation بمفتاح صحيح: " + activationMsg);
+
+            // 8-و) الحالة بعد التفعيل
+            bool afterActivation = ProductStateEngine.Instance.EvaluateCurrentState();
+            Check(afterActivation && ProductStateEngine.IsVerified && ProductStateEngine.Plan == "PRO",
+                "بعد التفعيل: PRO ومسموح بالتشغيل");
+
+            string? storedBlob = GetRegistryValue("ActivationBlob");
+            Check(storedBlob == ValidKeyDashed, "ActivationBlob مخزّن في الـ Registry كما أُدخل");
+            Check(File.Exists(MizanPaths.StateFilePath), "ملف state.enc موجود");
+
+            // 8-ز) العبث بالـ Registry: القيمة المعدَّلة تُحذف
+            //      والمسار الاحتياطي (state.enc) يبقي البرنامج شغّالاً
+            SetRegistryValue("ActivationBlob", "AAAAABBBBBCCCCCDE77A");   // قيمة غير صالحة
+            bool tampered = ProductStateEngine.Instance.EvaluateCurrentState();
+            bool blobDeleted = GetRegistryValue("ActivationBlob") is null;
+            Check(tampered && blobDeleted,
+                "حذف Blob المُعبَّث به + الاستمرار في العمل عبر المسار الاحتياطي state.enc");
+
+            // 8-ح) ملف state.enc مرتبط بالجهاز: بصمة خاطئة لا تُعتمد
+            //      (نكتب ملفاً مشفّراً بمحتوى بصمة مختلفة ثم نثبت أنه لا يُنقذ تجربةً منتهية)
+            File.WriteAllText(MizanPaths.StateFilePath, EncryptForTest("MIZAN_VALID|AAAA-BBBB-CCCC-DDDD"));
+            SetRegistryValue("InstallDate", DateTime.Today.AddDays(-10).ToString("yyyyMMdd"));
+            bool wrongFingerprint = ProductStateEngine.Instance.EvaluateCurrentState();
+            Check(!wrongFingerprint, "بصمة خاطئة في state.enc + تجربة منتهية → رفض (ربط الملف بالجهاز يعمل)");
+
+            // 8-ط) تنظيف نهائي: إعادة التفعيل والانتهاء بحالة PRO
+            File.Delete(MizanPaths.StateFilePath);
+            var (reactivated, reactivatedMsg) = await ProductStateEngine.Instance.CommitActivation(ValidKeyPlain);
+            Check(reactivated && ProductStateEngine.Instance.EvaluateCurrentState(),
+                "إعادة تفعيل نهائية بمفتاح آخر: " + reactivatedMsg);
+        }
+
+        // ─────────────── مساعدات الـ Registry والـ AES للاختبار ───────────────
+
+        private static void SetRegistryValue(string name, string value)
+        {
+            using RegistryKey key = Registry.CurrentUser.CreateSubKey(ProductStateEngine.RegistryPath, writable: true);
+            key.SetValue(name, value, RegistryValueKind.String);
+        }
+
+        private static string? GetRegistryValue(string name)
+        {
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(ProductStateEngine.RegistryPath);
+            return key?.GetValue(name) as string;
+        }
+
+        /// <summary>تشفير بنفس مفتاح المحرك — لمحاكاة ملف state.enc بصبغة خاطئة.</summary>
+        private static string EncryptForTest(string plainText)
+        {
+            using Aes aes = Aes.Create();
+            aes.Key = Encoding.UTF8.GetBytes("Mizan2024_K3y128");
+            aes.IV = Encoding.UTF8.GetBytes("MizanPro_IV_2024");
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+
+            using ICryptoTransform encryptor = aes.CreateEncryptor();
+            byte[] bytes = Encoding.UTF8.GetBytes(plainText);
+            return Convert.ToBase64String(encryptor.TransformFinalBlock(bytes, 0, bytes.Length));
+        }
+
+        // ─────────────── أداة الفحص ───────────────
 
         private static void Check(bool condition, string name)
         {
