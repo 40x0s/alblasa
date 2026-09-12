@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and Smoke Test (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 6
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Restore NuGet packages
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --verbosity minimal
+
+      # فحص تشغيلي فعلي: يشغّل قاعدة البيانات + الـ Migrations + الـ Seeder
+      # وجميع الخدمات ومحرك التفعيل في مشروع مؤقت خارج المستودع.
+      - name: Smoke test (runtime verification)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $smokeDir = Join-Path $env:RUNNER_TEMP "smoke"
+          New-Item -ItemType Directory -Force -Path $smokeDir | Out-Null
+          Copy-Item ".github/smoke/*" -Destination $smokeDir -Recurse -Force
+
+          $csproj = Join-Path $smokeDir "Smoke.csproj"
+          $mainProject = Join-Path $env:GITHUB_WORKSPACE "MizanPro.csproj"
+          (Get-Content $csproj -Raw).Replace("__MAIN_PROJECT__", $mainProject) | Set-Content $csproj
+
+          dotnet run --project $csproj --verbosity minimal

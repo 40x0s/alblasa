@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    ميزان برو — نظام محاسبة سعودي احترافي (WPF / .NET 6)
+    ملاحظات الإعداد:
+    - net6.0-windows + WPF (واجهة عربية RTL بالكامل — بدون أي مكتبات UI جاهزة)
+    - PlatformTarget x86
+    - Optimize=false و DebugType=none لتسهيل تحليل الملف التنفيذي في مادة الهندسة العكسية
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <PlatformTarget>x86</PlatformTarget>
+    <Optimize>false</Optimize>
+    <DebugType>none</DebugType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MizanPro</RootNamespace>
+    <AssemblyName>MizanPro</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- قاعدة البيانات SQLite عبر Entity Framework Core 7.x -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.20" />
+
+    <!-- أدوات التصميم الخاصة بـ EF (تتطلبها أداة dotnet-ef عند توليد الـ Migrations) -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.20">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <!-- تجزئة كلمات المرور (BCrypt) -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+
+    <!-- قراءة/كتابة ملف الترخيص JSON -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+
+    <!-- جلب عنوان MAC للجهاز (قفل التفعيل على الجهاز عبر WMI) -->
+    <PackageReference Include="System.Management" Version="6.0.2" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,139 @@
+<Window x:Class="MizanPro.Windows.AuthWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:MizanPro.Controls"
+        Title="ميزان برو — تسجيل الدخول"
+        Width="880" Height="560"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        FlowDirection="RightToLeft"
+        FontFamily="Segoe UI"
+        Background="{StaticResource BackgroundBrush}"
+        UseLayoutRounding="True">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="330" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ═══════════ لوحة التعريف (الجهة اليمنى بسبب RTL) ═══════════ -->
+        <Border Grid.Column="0">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#0F4D35" Offset="0" />
+                    <GradientStop Color="#093021" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+
+            <StackPanel VerticalAlignment="Center" Margin="34,0">
+                <Border Width="74" Height="74"
+                        CornerRadius="37" Background="#1C7A54"
+                        HorizontalAlignment="Right">
+                    <TextBlock Text="⚖" FontSize="36" Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <TextBlock Text="ميزان برو"
+                           FontSize="30" FontWeight="Bold" Foreground="White"
+                           Margin="0,20,0,0" />
+
+                <TextBlock Text="نظام المحاسبة وإدارة الفواتير السعودي"
+                           FontSize="14" Foreground="#A9CDBB"
+                           Margin="0,8,0,0" TextWrapping="Wrap" />
+
+                <Border Background="#FFFFFF" Opacity="0.12" Height="1" Margin="0,22,0,22" />
+
+                <StackPanel>
+                    <TextBlock Text="✓  إصدار الفواتير مع ضريبة القيمة المضافة 15%"
+                               Foreground="#CFE6DA" FontSize="13" Margin="0,0,0,10" />
+                    <TextBlock Text="✓  إدارة العملاء والمنتجات والمخزون"
+                               Foreground="#CFE6DA" FontSize="13" Margin="0,0,0,10" />
+                    <TextBlock Text="✓  تقارير مالية شهرية فورية"
+                               Foreground="#CFE6DA" FontSize="13" Margin="0,0,0,10" />
+                    <TextBlock Text="✓  متابعة الفواتير المتأخرة السداد"
+                               Foreground="#CFE6DA" FontSize="13" />
+                </StackPanel>
+
+                <!-- شريط حالة الترخيص (متبقٍ X يوماً من التجربة / النسخة مفعّلة ...) -->
+                <Border x:Name="TrialBanner"
+                        Background="#1B5E40" CornerRadius="10"
+                        Padding="14,10" Margin="0,26,0,0"
+                        Visibility="Collapsed">
+                    <TextBlock x:Name="TrialText" Text=""
+                               Foreground="#E8F4EF" FontSize="12.5" TextWrapping="Wrap" />
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══════════ نموذج الدخول / التفعيل (الجهة اليسرى) ═══════════ -->
+        <Grid Grid.Column="1" Margin="46,36">
+
+            <!-- لوحة تسجيل الدخول -->
+            <StackPanel x:Name="LoginPanel"
+                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Width="360">
+                <TextBlock Text="تسجيل الدخول"
+                           Style="{StaticResource SectionTitleStyle}" FontSize="22" />
+
+                <TextBlock Text="أدخل بيانات حسابك للمتابعة إلى النظام"
+                           Foreground="{StaticResource SecondaryTextBrush}"
+                           FontSize="13" Margin="0,6,0,0" />
+
+                <TextBlock Text="اسم المستخدم"
+                           Style="{StaticResource FieldLabelStyle}" Margin="2,26,0,0" />
+                <TextBox x:Name="UsernameBox"
+                         Style="{StaticResource ModernTextBoxStyle}"
+                         KeyDown="UsernameBox_KeyDown" />
+
+                <TextBlock Text="كلمة المرور"
+                           Style="{StaticResource FieldLabelStyle}" Margin="2,16,0,0" />
+                <PasswordBox x:Name="PasswordBox"
+                             Style="{StaticResource ModernPasswordBoxStyle}"
+                             KeyDown="PasswordBox_KeyDown" />
+
+                <TextBlock x:Name="ErrorText" Text=""
+                           Foreground="{StaticResource DangerBrush}"
+                           FontSize="12.5" TextWrapping="Wrap" Margin="2,10,0,0" />
+
+                <Button x:Name="SignInButton" Content="دخول"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Margin="0,16,0,0" Click="SignIn_Click" />
+
+                <Border Background="{StaticResource PrimaryLightBrush}"
+                        CornerRadius="10" Padding="14,10" Margin="0,20,0,0">
+                    <StackPanel>
+                        <TextBlock Text="بيانات الدخول التجريبية"
+                                   Foreground="{StaticResource PrimaryDarkBrush}"
+                                   FontSize="12" FontWeight="SemiBold" />
+                        <TextBlock Text="admin / Admin@123 (مدير النظام)"
+                                   Foreground="{StaticResource TextBrush}" FontSize="12"
+                                   Margin="0,4,0,0" FlowDirection="RightToLeft" />
+                        <TextBlock Text="accountant / Acc@2024 (محاسب)"
+                                   Foreground="{StaticResource TextBrush}" FontSize="12"
+                                   Margin="0,2,0,0" FlowDirection="RightToLeft" />
+                    </StackPanel>
+                </Border>
+
+                <Button Content="لديّ مفتاح تفعيل — تنشيط البرنامج"
+                        Style="{StaticResource GhostButtonStyle}"
+                        HorizontalAlignment="Center" Margin="0,14,0,0"
+                        Click="ShowActivation_Click" />
+            </StackPanel>
+
+            <!-- لوحة التفعيل (تبدأ مخفية وتظهر عند الحاجة) -->
+            <StackPanel x:Name="ActivationHost"
+                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Width="360" Visibility="Collapsed">
+                <controls:ActivationPanel x:Name="ActivationPanelControl"
+                                          ActivationSucceeded="ActivationPanelControl_ActivationSucceeded" />
+                <Button Content="العودة إلى تسجيل الدخول"
+                        Style="{StaticResource GhostButtonStyle}"
+                        HorizontalAlignment="Center" Margin="0,16,0,0"
+                        Click="BackToLogin_Click" />
+            </StackPanel>
+
+        </Grid>
+    </Grid>
+
+</Window>

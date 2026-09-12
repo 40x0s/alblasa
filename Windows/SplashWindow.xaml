@@ -1,0 +1,66 @@
+<Window x:Class="MizanPro.Windows.SplashWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ميزان برو"
+        Width="500" Height="330"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="False"
+        AllowsTransparency="True"
+        Background="Transparent"
+        FlowDirection="RightToLeft"
+        FontFamily="Segoe UI"
+        UseLayoutRounding="True">
+
+    <!-- شاشة البداية: تُعرض 3 ثوانٍ أثناء تهيئة قاعدة البيانات -->
+    <Border CornerRadius="18">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#0F4D35" Offset="0" />
+                <GradientStop Color="#082B1D" Offset="1" />
+            </LinearGradientBrush>
+        </Border.Background>
+
+        <Grid>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border Width="84" Height="84"
+                        CornerRadius="42"
+                        Background="#1C7A54"
+                        HorizontalAlignment="Center">
+                    <TextBlock Text="⚖"
+                               FontSize="42"
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
+
+                <TextBlock Text="ميزان برو"
+                           FontSize="34" FontWeight="Bold" Foreground="White"
+                           HorizontalAlignment="Center" Margin="0,18,0,0" />
+
+                <TextBlock Text="نظام المحاسبة وإدارة الفواتير السعودي"
+                           FontSize="14" Foreground="#A9CDBB"
+                           HorizontalAlignment="Center" Margin="0,6,0,0" />
+
+                <ProgressBar Width="220" Height="5"
+                             IsIndeterminate="True"
+                             Background="#155C41"
+                             Foreground="#C9A227"
+                             BorderThickness="0"
+                             Margin="0,28,0,0"
+                             FlowDirection="LeftToRight" />
+
+                <TextBlock Text="جارٍ تهيئة قاعدة البيانات..."
+                           FontSize="12" Foreground="#8FBCA4"
+                           HorizontalAlignment="Center" Margin="0,12,0,0" />
+            </StackPanel>
+
+            <TextBlock Text="الإصدار 1.0.0"
+                       FontSize="11" Foreground="#77A88F"
+                       HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                       Margin="0,0,0,16" />
+        </Grid>
+    </Border>
+
+</Window>
