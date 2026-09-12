@@ -14,6 +14,12 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>MizanPro.SmokeTest</AssemblyName>
     <RootNamespace>MizanPro.SmokeTest</RootNamespace>
+
+    <!-- مطابقة إعداد المشروع الرئيسي (SelfContained + win-x86):
+         يمنع خطأ NETSDK1151 (مشروع مكتفٍ يُشار إليه من غير مكتفٍ)
+         ويجعل الملف التنفيذي الناتج مكتفياً ذاتياً فيعمل عبر WOW64 على العدّاء. -->
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>

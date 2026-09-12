@@ -104,9 +104,9 @@ jobs:
 
           $output = Join-Path $env:RUNNER_TEMP "smoke-output.txt"
 
-          # ملاحظة معمارية: مشروع ميزان بُني x86 في خطوة البناء أعلاه (كما في المواصفة)،
-          # لكن عدّاء GitHub Actions لا يملك وقت تشغيل 32-بت، لذا يُبنى مشروع الفحص
-          # (والمشروع المُشار إليه) بخصيصة AnyCPU العمومية — وهذا لا يغيّر أي منطق مُختبَر.
+          # ملاحظة معمارية: مشروع الفحص مكتفٍ ذاتياً (win-x86) مثل المشروع الرئيسي
+          # (لمنع خطأ NETSDK1151)، لكن معمارياته المُدارة AnyCPU — فيعمل ملفه
+          # التنفيذي عبر WOW64 على العدّاء ويُختبَر نفس المنطق تماماً.
           dotnet build $csproj -c Debug -p:PlatformTarget=AnyCPU --verbosity minimal --nologo 2>&1 |
             Tee-Object -FilePath $output
           if ($LASTEXITCODE -ne 0) {
@@ -116,8 +116,11 @@ jobs:
             exit 1
           }
 
-          $smokeDll = Join-Path $smokeDir "bin\Debug\net6.0-windows\MizanPro.SmokeTest.dll"
-          dotnet $smokeDll 2>&1 | Tee-Object -FilePath $output
+          $smokeExe = Join-Path $smokeDir "bin\Debug\net6.0-windows\win-x86\MizanPro.SmokeTest.exe"
+          if (-Not (Test-Path $smokeExe)) {
+            $smokeExe = Join-Path $smokeDir "bin\Debug\net6.0-windows\MizanPro.SmokeTest.exe"
+          }
+          & $smokeExe 2>&1 | Tee-Object -FilePath $output
           $code = $LASTEXITCODE
 
           if ($code -ne 0) {
