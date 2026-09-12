@@ -130,3 +130,29 @@ jobs:
             }
             exit 1
           }
+
+      # النشر الفعلي كما في build.bat: ملف واحد مكتفٍ ذاتياً (win-x86)
+      - name: Publish single-file package (Release · win-x86)
+        shell: pwsh
+        run: |
+          dotnet publish -c Release -r win-x86 --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -o ./dist
+
+          $exe = "dist/MizanPro.exe"
+          if (-Not (Test-Path $exe)) {
+            Write-Output "::error::dist/MizanPro.exe was not produced"
+            exit 1
+          }
+
+          $size = [math]::Round((Get-Item $exe).Length / 1MB, 1)
+          Write-Output "MizanPro.exe produced successfully ($size MB)"
+
+      # رفع الملف التنفيذي كـ Artifact يمكن تنزيله من صفحة التشغيل
+      - name: Upload MizanPro.exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MizanPro-win-x86
+          path: dist/MizanPro.exe
+          retention-days: 14

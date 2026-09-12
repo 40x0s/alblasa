@@ -62,7 +62,13 @@ MizanPro/
 │   ├── AvatarHelper.cs          #   الأفاتار: لون حتمي + أول حرفين من الاسم
 │   └── IRefreshable.cs          #   واجهة تحديث بيانات الصفحات عند التنقل
 ├── Converters/                  #   محوّلات Enum → نص عربي للعرض
-└── Themes/Styles.xaml           #   نظام التصميم: لوحة داكنة/ذهبية + أزرار وحقول وجداول وتبويبات
+├── Themes/Styles.xaml           #   نظام التصميم: لوحة داكنة/ذهبية + أزرار وحقول وجداول وتبويبات
+│
+├── build.bat                    # استعادة ← بناء ← نشر ملف واحد (dist\MizanPro.exe)
+├── Workshop_Pack.bat            # تجميع حزمة الورشة (Workshop_Delivery\)
+├── README_Workshop.md           # دليل ورشة كسر الحماية (للمحاضرة)
+├── LabSheet.md                  # ورقة التجارب التفصيلية (6 تجارب + نقاش دفاع)
+└── Tools_Links.txt              # روابط الأدوات المطلوبة للورشة
 ```
 
 ## الحزم المستخدمة
@@ -124,9 +130,35 @@ dotnet run            # أو افتح المجلد في Visual Studio 2022 وا�
 
 ## التكامل المستمر (GitHub Actions)
 
-- `.github/workflows/build.yml` — بناء على Windows + **فحص تشغيلي فعلي** (44 فحصاً) يشغّل
+- `.github/workflows/build.yml` — بناء على Windows + **فحص تشغيلي فعلي (50 فحصاً)** يشغّل
   قاعدة البيانات والخدمات ومحرك الحماية بالكامل: خوارزمية المفاتيح، بصمة الجهاز،
-  التجربة والانتهاء، التفعيل، العبث بالـ Registry، وربط `state.enc` بالجهاز.
+  التجربة والانتهاء، التفعيل، العبث بالـ Registry، ربط `state.enc` بالجهاز،
+  ودورة حياة المسودة (لا تحجز المخزون — الإصدار يخصم — الإلغاء يعيد).
+- بعدها ينشر سير العمل **الملف التنفيذي الفعلي** (Release · win-x86 · ملف واحد مكتفٍ ذاتياً)
+  ويرفعه كـ Artifact باسم `MizanPro-win-x86` يمكن تنزيله من صفحة التشغيل.
+
+## النشر وحزمة الورشة
+
+على جهاز Windows مزوّد بـ .NET SDK 6+:
+
+```bat
+build.bat           ← ينتج dist\MizanPro.exe (ملف واحد مكتفٍ ذاتياً)
+Workshop_Pack.bat   ← يجمع Workshop_Delivery\:
+                       MizanPro.exe + README_Workshop.md + Tools_Links.txt + LabSheet.md
+```
+
+- الملف التنفيذي يعمل على Windows 10/11 (32/64-بت) **بدون أي متطلبات إضافية**
+  (يحتوي وقت تشغيل .NET والمكتبات الأصلية بما فيها SQLite).
+- إعدادات النشر مضمنة في `MizanPro.csproj`: `PublishSingleFile` + `SelfContained` +
+  `RuntimeIdentifier=win-x86` — لذا `dotnet publish -c Release` وحده يكفي أيضاً.
+
+## مواد الورشة التعليمية
+
+| الملف | المحتوى |
+|---|---|
+| `README_Workshop.md` | نظرة عامة: بيانات الدخول، الأدوات، الخطوات المختصرة |
+| `LabSheet.md` | 6 تجارب تفصيلية: Procmon ← dnSpy ← Patch ← Keygen ← فك state.enc ← نقاش الدفاع |
+| `Tools_Links.txt` | روابط تحميل الأدوات (dnSpy · Procmon · x32dbg · Python) |
 
 ## ملاحظات للمطوّر
 

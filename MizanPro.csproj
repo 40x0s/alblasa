@@ -6,18 +6,35 @@
     - net6.0-windows + WPF (واجهة عربية RTL بالكامل — بدون أي مكتبات UI جاهزة)
     - PlatformTarget x86
     - Optimize=false و DebugType=none لتسهيل تحليل الملف التنفيذي في مادة الهندسة العكسية
+    - النشر: ملف تنفيذي واحد مكتفٍ ذاتياً (win-x86) عبر build.bat أو dotnet publish
   -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <PlatformTarget>x86</PlatformTarget>
-    <Optimize>false</Optimize>
-    <DebugType>none</DebugType>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MizanPro</RootNamespace>
     <AssemblyName>MizanPro</AssemblyName>
+
+    <!-- خصائص البحث في الهندسة العكسية -->
+    <PlatformTarget>x86</PlatformTarget>
+    <Optimize>false</Optimize>
+    <DebugType>none</DebugType>
+
+    <!-- بيانات التجميعة (تظهر في خصائص الملف التنفيذي) -->
+    <AssemblyTitle>ميزان Pro للمحاسبة</AssemblyTitle>
+    <Company>ميزان للحلول التقنية</Company>
+    <Copyright>© 2025 ميزان</Copyright>
+    <FileVersion>3.0.0.0</FileVersion>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <Description>نظام محاسبة وإدارة أعمال متكامل للسوق السعودي</Description>
+
+    <!-- النشر: ملف واحد مكتفٍ ذاتياً لويندوز 32-بت -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,10 +50,10 @@
     <!-- تجزئة كلمات المرور (BCrypt) -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 
-    <!-- قراءة/كتابة ملف الترخيص JSON -->
+    <!-- قراءة/كتابة JSON -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 
-    <!-- جلب عنوان MAC للجهاز (قفل التفعيل على الجهاز عبر WMI) -->
+    <!-- جلب عنوان MAC للجهاز (بصمة الجهاز عبر WMI) -->
     <PackageReference Include="System.Management" Version="6.0.2" />
   </ItemGroup>
 

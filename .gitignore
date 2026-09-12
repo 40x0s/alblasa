@@ -1,6 +1,8 @@
 bin/
 obj/
 .vs/
+dist/
+Workshop_Delivery/
 *.user
 *.suo
 *.db
