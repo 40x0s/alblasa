@@ -40,4 +40,13 @@ jobs:
           $mainProject = Join-Path $env:GITHUB_WORKSPACE "MizanPro.csproj"
           (Get-Content $csproj -Raw).Replace("__MAIN_PROJECT__", $mainProject) | Set-Content $csproj
 
-          dotnet run --project $csproj --verbosity minimal
+          $output = Join-Path $env:RUNNER_TEMP "smoke-output.txt"
+          dotnet run --project $csproj --verbosity minimal 2>&1 | Tee-Object -FilePath $output
+
+          if ($LASTEXITCODE -ne 0) {
+            # إظهار مخرجات الفحص كتعليقات داخل الـ Check Run لسهولة التشخيص
+            Get-Content $output | Select-Object -First 60 | ForEach-Object {
+              Write-Output ("::error::" + ($_ -replace "`t", " "))
+            }
+            exit 1
+          }
