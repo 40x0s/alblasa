@@ -41,15 +41,28 @@ MizanPro/
 │       ├── CustomerService.cs   #   العملاء + الإحصاءات
 │       └── ProductService.cs    #   المنتجات + المخزون المنخفض
 │
-├── Windows/                     # نوافذ التشغيل (FlowDirection=RightToLeft)
-│   ├── SplashWindow.xaml        #   شاشة البداية (3 ثوانٍ)
-│   ├── AuthWindow.xaml          #   تسجيل الدخول (+ استضافة لوحة التفعيل)
-│   └── MainWindow.xaml          #   الرئيسية: شريط جانبي + لوحة معلومات + 4 قوائم
+├── Windows/                     # النوافذ (RTL · XAML مخصص بالكامل)
+│   ├── SplashWindow.xaml        #   شاشة البداية (BackgroundWorker + مراحل تقدم + تلاشي)
+│   ├── AuthWindow.xaml          #   الدخول والتفعيل (اهتزاز عند الفشل + إظهار كلمة المرور)
+│   ├── MainWindow.xaml          #   الرئيسية: شريط علوي + قائمة جانبية متحركة (240↔64) + شريط حالة
+│   ├── NewInvoiceDialog.xaml    #   نافذة فاتورة جديدة (أصناف قابلة للتحرير + ملخص لحظي)
+│   ├── CustomerDialog.xaml      #   نافذة عميل جديد
+│   └── ProductDialog.xaml       #   نافذة منتج جديد
+│
+├── Pages/                       # صفحات MainWindow (تُعرض داخل ContentHost بتلاشي 200ms)
+│   ├── DashboardPage.xaml       #   لوحة التحكم: 4 مؤشرات KPI + آخر الفواتير + أبرز العملاء
+│   ├── InvoicesPage.xaml        #   الفواتير: فلاتر + شارات حالة + ترقيم صفحات (20/صفحة)
+│   ├── CustomersPage.xaml       #   العملاء: عرض بطاقات/قائمة + أفاتار + شريط ديون
+│   ├── ProductsPage.xaml        #   المنتجات: بطاقات بأيقونات الفئات + فلاتر المخزون
+│   ├── ReportsPage.xaml         #   التقارير: ملخص مالي شهري + توزيع الحالات
+│   └── SettingsPage.xaml        #   الإعدادات: 5 تبويبات (شركة/حساب/ترخيص/تفضيلات/عن البرنامج)
 │
 ├── Controls/
-│   └── ActivationPanel.xaml     #   لوحة إدخال مفتاح التفعيل
+│   ├── ActivationPanel.xaml     #   لوحة إدخال مفتاح التفعيل (تنسيق تلقائي)
+│   ├── AvatarHelper.cs          #   الأفاتار: لون حتمي + أول حرفين من الاسم
+│   └── IRefreshable.cs          #   واجهة تحديث بيانات الصفحات عند التنقل
 ├── Converters/                  #   محوّلات Enum → نص عربي للعرض
-└── Themes/Styles.xaml           #   نظام التصميم (ألوان، أزرار، حقول، بطاقات)
+└── Themes/Styles.xaml           #   نظام التصميم: لوحة داكنة/ذهبية + أزرار وحقول وجداول وتبويبات
 ```
 
 ## الحزم المستخدمة

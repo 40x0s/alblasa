@@ -1,0 +1,299 @@
+<UserControl x:Class="MizanPro.Pages.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:MizanPro.Controls"
+             FlowDirection="RightToLeft"
+             Background="{StaticResource LightBgBrush}"
+             FontFamily="{StaticResource MainFont}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="32,24,32,24">
+        <StackPanel>
+
+            <TextBlock Text="الإعدادات" Style="{StaticResource PageTitleStyle}" />
+            <TextBlock Text="بيانات الشركة والحساب والترخيص والتفضيلات" Style="{StaticResource PageSubtitleStyle}"
+                       Margin="0,6,0,20" />
+
+            <TabControl Style="{StaticResource ModernTabControlStyle}">
+
+                <!-- ═══════════ تبويب الشركة ═══════════ -->
+                <TabItem Header="الشركة" Style="{StaticResource ModernTabItemStyle}">
+                    <Border Style="{StaticResource CardBorderStyle}" Padding="24,20" MaxWidth="720"
+                            HorizontalAlignment="Right">
+                        <StackPanel>
+                            <TextBlock Text="بيانات الشركة" Style="{StaticResource CardTitleStyle}" />
+                            <TextBlock Text="تظهر هذه البيانات على الفواتير والتقارير"
+                                       Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,16" />
+
+                            <TextBlock Text="اسم الشركة" Style="{StaticResource FieldLabelStyle}" />
+                            <TextBox x:Name="CompanyNameInput" Style="{StaticResource ModernTextBoxStyle}"
+                                     Tag="مثال: مؤسسة ميزان للحلول التجارية" />
+
+                            <TextBlock Text="العنوان" Style="{StaticResource FieldLabelStyle}" Margin="2,16,0,6" />
+                            <TextBox x:Name="CompanyAddressInput" Style="{StaticResource ModernTextBoxStyle}"
+                                     Tag="الرياض — حي العليا" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,16,6,0">
+                                    <TextBlock Text="الرقم الضريبي" Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBox x:Name="CompanyTaxInput" Style="{StaticResource ModernTextBoxStyle}"
+                                             Tag="3XXXXXXXXXXXXXX" MaxLength="15" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0,16,6,0">
+                                    <TextBlock Text="الهاتف" Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBox x:Name="CompanyPhoneInput" Style="{StaticResource ModernTextBoxStyle}"
+                                             Tag="011XXXXXXX" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="البريد الإلكتروني" Style="{StaticResource FieldLabelStyle}"
+                                       Margin="2,16,0,6" />
+                            <TextBox x:Name="CompanyEmailInput" Style="{StaticResource ModernTextBoxStyle}"
+                                     Tag="info@company.sa" />
+
+                            <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                                <Button Content="حفظ بيانات الشركة" Style="{StaticResource GoldButtonStyle}"
+                                        Click="SaveCompany_Click" />
+                                <TextBlock x:Name="CompanySavedText" Text="✓ تم الحفظ" FontSize="13"
+                                           Foreground="{StaticResource SuccessBrush}" Margin="16,0,0,0"
+                                           VerticalAlignment="Center" Visibility="Collapsed" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+
+                <!-- ═══════════ تبويب الحساب ═══════════ -->
+                <TabItem Header="الحساب" Style="{StaticResource ModernTabItemStyle}">
+                    <StackPanel>
+                        <Border Style="{StaticResource CardBorderStyle}" Padding="24,20" MaxWidth="720"
+                                HorizontalAlignment="Right">
+                            <StackPanel>
+                                <TextBlock Text="الملف الشخصي" Style="{StaticResource CardTitleStyle}" />
+                                <TextBlock x:Name="ProfileUsernameText" Text=""
+                                           Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,16" />
+
+                                <TextBlock Text="الاسم الكامل" Style="{StaticResource FieldLabelStyle}" />
+                                <TextBox x:Name="FullNameInput" Style="{StaticResource ModernTextBoxStyle}" />
+
+                                <TextBlock Text="البريد الإلكتروني" Style="{StaticResource FieldLabelStyle}"
+                                           Margin="2,16,0,6" />
+                                <TextBox x:Name="ProfileEmailInput" Style="{StaticResource ModernTextBoxStyle}" />
+
+                                <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                                    <Button Content="حفظ" Style="{StaticResource GoldButtonStyle}"
+                                            MinWidth="130" Click="SaveProfile_Click" />
+                                    <TextBlock x:Name="ProfileSavedText" Text="" FontSize="13" Margin="16,0,0,0"
+                                               VerticalAlignment="Center" Visibility="Collapsed" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource CardBorderStyle}" Padding="24,20" MaxWidth="720"
+                                Margin="0,16,0,0" HorizontalAlignment="Right">
+                            <StackPanel>
+                                <TextBlock Text="تغيير كلمة المرور" Style="{StaticResource CardTitleStyle}" />
+                                <TextBlock Text="كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف"
+                                           Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,16" />
+
+                                <TextBlock Text="كلمة المرور الحالية" Style="{StaticResource FieldLabelStyle}" />
+                                <PasswordBox x:Name="OldPasswordInput" Style="{StaticResource ModernPasswordBoxStyle}" />
+
+                                <TextBlock Text="كلمة المرور الجديدة" Style="{StaticResource FieldLabelStyle}"
+                                           Margin="2,16,0,6" />
+                                <PasswordBox x:Name="NewPasswordInput" Style="{StaticResource ModernPasswordBoxStyle}"
+                                             PasswordChanged="NewPasswordInput_PasswordChanged" />
+
+                                <!-- شريط قوة كلمة المرور -->
+                                <Grid Margin="2,10,0,0">
+                                    <StackPanel Orientation="Horizontal" x:Name="StrengthBar">
+                                        <Border x:Name="Seg1" Width="52" Height="5" CornerRadius="2.5"
+                                                Background="{StaticResource LightBorderBrush}" Margin="0,0,6,0" />
+                                        <Border x:Name="Seg2" Width="52" Height="5" CornerRadius="2.5"
+                                                Background="{StaticResource LightBorderBrush}" Margin="0,0,6,0" />
+                                        <Border x:Name="Seg3" Width="52" Height="5" CornerRadius="2.5"
+                                                Background="{StaticResource LightBorderBrush}" Margin="0,0,6,0" />
+                                        <Border x:Name="Seg4" Width="52" Height="5" CornerRadius="2.5"
+                                                Background="{StaticResource LightBorderBrush}" Margin="0,0,6,0" />
+                                        <Border x:Name="Seg5" Width="52" Height="5" CornerRadius="2.5"
+                                                Background="{StaticResource LightBorderBrush}" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="StrengthLabel" Text="" FontSize="11" Margin="0,10,0,0"
+                                               Foreground="{StaticResource TextLightBrush}" />
+                                </Grid>
+
+                                <TextBlock Text="تأكيد كلمة المرور الجديدة" Style="{StaticResource FieldLabelStyle}"
+                                           Margin="2,16,0,6" />
+                                <PasswordBox x:Name="ConfirmPasswordInput" Style="{StaticResource ModernPasswordBoxStyle}" />
+
+                                <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                                    <Button Content="تغيير كلمة المرور" Style="{StaticResource GoldButtonStyle}"
+                                            MinWidth="160" Click="ChangePassword_Click" />
+                                    <TextBlock x:Name="PasswordChangedText" Text="" FontSize="13" Margin="16,0,0,0"
+                                               VerticalAlignment="Center" Visibility="Collapsed" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- ═══════════ تبويب الترخيص ═══════════ -->
+                <TabItem Header="الترخيص" Style="{StaticResource ModernTabItemStyle}">
+                    <StackPanel MaxWidth="720" HorizontalAlignment="Right">
+
+                        <!-- حالة PRO -->
+                        <Border x:Name="ProCard" Background="{StaticResource SuccessSoftBrush}"
+                                BorderBrush="{StaticResource SuccessBrush}" BorderThickness="1.5"
+                                CornerRadius="12" Padding="24,18" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="✓ ميزان Pro مُفعَّل" FontSize="18" FontWeight="Bold"
+                                           Foreground="{StaticResource SuccessBrush}" />
+                                <TextBlock Text="شكراً لتفعيلك النسخة الكاملة — جميع المزايا متاحة بدون قيود."
+                                           FontSize="13" Foreground="{StaticResource TextMidBrush}"
+                                           Margin="0,6,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- حالة التجربة -->
+                        <Border x:Name="TrialCard" Background="{StaticResource WarningSoftBrush}"
+                                BorderBrush="{StaticResource WarningBrush}" BorderThickness="1.5"
+                                CornerRadius="12" Padding="24,18" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock x:Name="TrialDaysText" Text="⏰ X أيام متبقية" FontSize="18"
+                                           FontWeight="Bold" Foreground="{StaticResource WarningBrush}" />
+                                <TextBlock Text="فعّل النسخة الآن للاستمرار في استخدام جميع المزايا بعد انتهاء التجربة."
+                                           FontSize="13" Foreground="{StaticResource TextMidBrush}"
+                                           Margin="0,6,0,0" />
+                                <Button x:Name="ActivateNowButton" Content="تفعيل الآن"
+                                        Style="{StaticResource GoldButtonStyle}" MinWidth="150" Margin="0,12,0,0"
+                                        HorizontalAlignment="Right" Click="ActivateNow_Click" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- معرّف الجهاز -->
+                        <Border Style="{StaticResource CardBorderStyle}" Margin="0,16,0,0" Padding="24,18">
+                            <StackPanel>
+                                <TextBlock Text="معرّف الجهاز" Style="{StaticResource CardTitleStyle}" />
+                                <TextBlock Text="يُستخدم لربط الترخيص بهذا الجهاز تحديداً"
+                                           Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,10" />
+                                <Grid>
+                                    <Border Background="{StaticResource LightBgBrush}" CornerRadius="8"
+                                            Padding="14,10" Width="320" HorizontalAlignment="Right">
+                                        <TextBlock x:Name="DeviceIdText" Text="—"
+                                                   FontFamily="{StaticResource MonoFont}" FontSize="14"
+                                                   Foreground="{StaticResource TextMidBrush}"
+                                                   FlowDirection="LeftToRight" HorizontalAlignment="Center" />
+                                    </Border>
+                                    <Button Content="نسخ" Style="{StaticResource LightGhostButtonStyle}"
+                                            HorizontalAlignment="Left" VerticalAlignment="Center"
+                                            Click="CopyDeviceId_Click" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- النافذة المنبثقة للتفعيل -->
+                        <Popup x:Name="ActivationPopup" PlacementTarget="{Binding ElementName=ActivateNowButton}"
+                               Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                            <Border Background="White" CornerRadius="12" Padding="24" Width="400"
+                                    BorderBrush="{StaticResource LightBorderBrush}" BorderThickness="1"
+                                    Effect="{StaticResource PopupShadow}">
+                                <controls:ActivationPanel x:Name="ActivationPanelControl"
+                                                          ActivationSucceeded="ActivationPanelControl_ActivationSucceeded" />
+                            </Border>
+                        </Popup>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- ═══════════ تبويب التفضيلات ═══════════ -->
+                <TabItem Header="التفضيلات" Style="{StaticResource ModernTabItemStyle}">
+                    <Border Style="{StaticResource CardBorderStyle}" Padding="24,20" MaxWidth="720"
+                            HorizontalAlignment="Right">
+                        <StackPanel>
+                            <TextBlock Text="تفضيلات الفوترة" Style="{StaticResource CardTitleStyle}" />
+                            <TextBlock Text="القيم الافتراضية عند إنشاء فاتورة جديدة"
+                                       Style="{StaticResource PageSubtitleStyle}" Margin="0,4,0,16" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                                    <TextBlock Text="نسبة الضريبة الافتراضية (%)" Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBox x:Name="VatInput" Style="{StaticResource ModernTextBoxStyle}"
+                                             Tag="15" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0,0,6,0">
+                                    <TextBlock Text="بادئة رقم الفاتورة" Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBox x:Name="PrefixInput" Style="{StaticResource ModernTextBoxStyle}"
+                                             Tag="INV-" FlowDirection="LeftToRight"
+                                             FontFamily="{StaticResource MonoFont}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="ملاحظة: ضريبة القيمة المضافة الحالية في المملكة 15% (0.15)"
+                                       FontSize="11.5" Foreground="{StaticResource TextFaintBrush}" Margin="2,10,0,0" />
+
+                            <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                                <Button Content="حفظ التفضيلات" Style="{StaticResource GoldButtonStyle}"
+                                        Click="SavePrefs_Click" />
+                                <TextBlock x:Name="PrefsSavedText" Text="✓ تم الحفظ" FontSize="13"
+                                           Foreground="{StaticResource SuccessBrush}" Margin="16,0,0,0"
+                                           VerticalAlignment="Center" Visibility="Collapsed" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+
+                <!-- ═══════════ تبويب عن البرنامج ═══════════ -->
+                <TabItem Header="عن البرنامج" Style="{StaticResource ModernTabItemStyle}">
+                    <Border Background="{StaticResource DarkBgBrush}" CornerRadius="16"
+                            Padding="40" MaxWidth="600" HorizontalAlignment="Center">
+                        <StackPanel HorizontalAlignment="Center">
+                            <Border Width="72" Height="72" CornerRadius="36" Background="#16233A"
+                                    HorizontalAlignment="Center">
+                                <TextBlock Text="⚖" FontSize="34" Foreground="{StaticResource GoldBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+
+                            <TextBlock Text="ميزان Pro v3.0.0" FontSize="22" FontWeight="Bold"
+                                       Foreground="White" HorizontalAlignment="Center" Margin="0,16,0,0" />
+                            <TextBlock Text="الإصدار السعودي · بناء 20250912" FontSize="12"
+                                       Foreground="{StaticResource TextFaintBrush}" HorizontalAlignment="Center"
+                                       Margin="0,6,0,0" />
+
+                            <Border Background="#233" Height="1" Margin="0,22" />
+
+                            <TextBlock Text="تم التطوير ضمن ورشة الهندسة العكسية" FontSize="13"
+                                       Foreground="#C7D2DC" HorizontalAlignment="Center" Margin="0,0,0,6" />
+                            <TextBlock Text="المادة: الهندسة العكسية وتحليل البرمجيات الخبيثة" FontSize="13"
+                                       Foreground="{StaticResource TextFaintBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="المشرف الأكاديمي: م. عبدالكريم الباشيري" FontSize="13"
+                                       Foreground="{StaticResource TextFaintBrush}" HorizontalAlignment="Center"
+                                       Margin="0,6,0,0" />
+
+                            <Border Background="#233" Height="1" Margin="0,22" />
+
+                            <TextBlock Text="فريق التطوير:" FontSize="13" Foreground="#C7D2DC"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="· علي فيصل العطيفي" FontSize="13"
+                                       Foreground="{StaticResource TextFaintBrush}" HorizontalAlignment="Center"
+                                       Margin="0,6,0,0" />
+                            <TextBlock Text="· ماجد الدميني" FontSize="13"
+                                       Foreground="{StaticResource TextFaintBrush}" HorizontalAlignment="Center"
+                                       Margin="0,4,0,0" />
+                            <TextBlock Text="· المعتصم بالله الراعي" FontSize="13"
+                                       Foreground="{StaticResource TextFaintBrush}" HorizontalAlignment="Center"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+
+            </TabControl>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</UserControl>

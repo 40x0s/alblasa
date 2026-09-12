@@ -1,129 +1,255 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media.Animation;
+using MizanPro.Controls;
+using MizanPro.Core.Engine;
 using MizanPro.Core.Services;
-using MizanPro.Models;
+using MizanPro.Pages;
 
 namespace MizanPro.Windows
 {
     /// <summary>
-    /// النافذة الرئيسية: شريط جانبي للتنقل + لوحة معلومات وأربع قوائم أساسية.
-    /// الشاشات التفصيلية (إنشاء/تعديل الفواتير ...) تُبنى في الأجزاء القادمة من المواصفة.
+    /// النافذة الرئيسية: شريط علوي داكن + قائمة جانبية متحركة (240↔64 بكسل)
+    /// + منطقة صفحات تتلاشى عند التنقل + شريط حالة سفلي.
     /// </summary>
     public partial class MainWindow : Window
     {
-        /// <summary>ربط أزرار التنقل بلوحاتها وعناوينها.</summary>
-        private readonly Dictionary<string, NavView> _views = new();
+        /// <summary>الصفحات المُنشأة مسبقاً (تُعاد استعادة كل صفحة عند العودة إليها).</summary>
+        private readonly Dictionary<string, UserControl> _pages = new();
+
+        /// <summary>عرض القائمة الجانبية موسّعاً؟</summary>
+        private bool _sidebarExpanded = true;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _views["Dashboard"] = new NavView(NavDashboard, DashboardPanel,
-                "لوحة المعلومات", "نظرة عامة على أداء النظام خلال الشهر الحالي");
-            _views["Invoices"] = new NavView(NavInvoices, InvoicesPanel,
-                "الفواتير", "جميع الفواتير المسجلة في النظام");
-            _views["Customers"] = new NavView(NavCustomers, CustomersPanel,
-                "العملاء", "قائمة العملاء وبياناتهم الاتصالية");
-            _views["Products"] = new NavView(NavProducts, ProductsPanel,
-                "المنتجات", "قائمة المنتجات وأسعارها ومخزونها");
+            SetupUserInfo();
+            SelectView("dashboard");
 
-            // معلومات المستخدم الحالي في الشريط الجانبي والعلوي
-            var user = SessionManager.Instance.ActiveUser;
-            string roleText = RoleToArabic(user?.Role ?? UserRole.Viewer);
-            UserNameText.Text = user?.FullName ?? "—";
-            UserRoleText.Text = roleText;
-            ChipUserName.Text = user?.Username ?? "—";
-            ChipUserRole.Text = "• " + roleText;
-            DateText.Text = FormatArabicDate(DateTime.Now);
-
-            SelectView("Dashboard");
+            Loaded += async (_, _) => await LoadBellBadgeAsync();
         }
 
-        // ─────────────── التنقل ───────────────
+        // ─────────────── معلومات المستخدم ───────────────
+
+        private void SetupUserInfo()
+        {
+            var user = SessionManager.Instance.ActiveUser;
+            string fullName = user?.FullName ?? "—";
+            string role = RoleToArabic(user?.Role ?? Models.UserRole.Viewer);
+
+            AvatarText.Text = AvatarHelper.Initials(fullName);
+            SidebarUserName.Text = fullName;
+            SidebarUserRole.Text = role;
+            StatusUserName.Text = $"{fullName} · {role}";
+
+            // بطاقة الترخيص أسفل القائمة الجانبية
+            if (ProductStateEngine.Plan == "PRO")
+            {
+                LicenseText.Text = "✓ ميزان Pro";
+                LicenseText.Foreground = (System.Windows.Media.Brush)FindResource("GoldBrush");
+            }
+            else
+            {
+                LicenseText.Text = $"⏰ تجربة · {ProductStateEngine.TrialDaysLeft} أيام";
+                LicenseText.Foreground = (System.Windows.Media.Brush)FindResource("WarningBrush");
+            }
+
+            StatusDate.Text = FormatArabicDate(DateTime.Now);
+        }
+
+        // ─────────────── التنقل بين الصفحات ───────────────
 
         private void Nav_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is string key && _views.ContainsKey(key))
+            if (sender is Button button && button.Tag is string key)
                 SelectView(key);
         }
 
-        private async void SelectView(string key)
+        /// <summary>ينشئ الصفحة عند أول طلب، ويستعيرها بعد ذلك، مع تأثير تلاشي 200ms.</summary>
+        private void SelectView(string key)
         {
-            // إخفاء كل اللوحات وإرجاع كل الأزرار للوضع العادي
-            foreach (var view in _views.Values)
+            // إعادة كل أزرار التنقل إلى الوضع العادي
+            foreach (var child in NavPanel.Children.OfType<Button>())
+                child.Style = (Style)FindResource("NavItemStyle");
+
+            // تمييز الزر المطلوب
+            var navButton = NavPanel.Children.OfType<Button>()
+                .FirstOrDefault(b => (b.Tag as string) == key);
+            if (navButton is not null)
+                navButton.Style = (Style)FindResource("NavItemActiveStyle");
+
+            // إنشاء الصفحة عند أول زيارة
+            if (!_pages.TryGetValue(key, out UserControl? page) || page is null)
             {
-                view.Button.Style = (Style)FindResource("NavButtonStyle");
-                view.Panel.Visibility = Visibility.Collapsed;
+                page = key switch
+                {
+                    "dashboard" => new DashboardPage(),
+                    "invoices" => new InvoicesPage(),
+                    "customers" => new CustomersPage(),
+                    "products" => new ProductsPage(),
+                    "reports" => new ReportsPage(),
+                    "settings" => new SettingsPage(),
+                    _ => new DashboardPage(),
+                };
+                _pages[key] = page;
             }
 
-            // تمييز القسم المطلوب وإظهار لوحته
-            var selected = _views[key];
-            selected.Button.Style = (Style)FindResource("NavButtonActiveStyle");
-            selected.Panel.Visibility = Visibility.Visible;
-            ViewTitle.Text = selected.Title;
-            ViewSubtitle.Text = selected.Subtitle;
+            ContentHost.Content = page;
 
+            // تأثير التلاشي عند التنقل
+            var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
+            page.Opacity = 0;
+            page.BeginAnimation(OpacityProperty, fade);
+
+            // إعادة تحميل بيانات الصفحة
+            if (page is IRefreshable refreshable)
+                refreshable.Refresh();
+        }
+
+        private async Task LoadBellBadgeAsync()
+        {
             try
             {
-                await LoadViewDataAsync(key);
+                var overdue = await InvoiceService.Instance.GetOverdueAsync();
+
+                BellBadgeText.Text = overdue.Count.ToString();
+                BellBadge.Visibility = overdue.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                BellBadge.ToolTip = $"{overdue.Count} فاتورة متأخرة السداد";
             }
-            catch (Exception ex)
+            catch
             {
-                MessageBox.Show(this,
-                    "تعذّر تحميل البيانات: " + ex.Message,
-                    "ميزان برو",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning,
-                    MessageBoxResult.OK,
-                    MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign);
+                BellBadge.Visibility = Visibility.Collapsed;
             }
         }
 
-        /// <summary>يجلب بيانات اللوحة المطلوبة من الخدمات المناسبة.</summary>
-        private async Task LoadViewDataAsync(string key)
+        // ─────────────── القائمة الجانبية المتحركة ───────────────
+
+        private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
         {
-            switch (key)
+            double from = _sidebarExpanded ? 240 : 64;
+            double to = _sidebarExpanded ? 64 : 240;
+
+            var animation = new DoubleAnimation
             {
-                case "Dashboard":
-                    await LoadDashboardAsync();
-                    break;
+                From = from,
+                To = to,
+                Duration = TimeSpan.FromMilliseconds(200),
+                DecelerationRatio = 0.6,
+            };
 
-                case "Invoices":
-                    InvoicesList.ItemsSource = await InvoiceService.Instance.GetAllAsync();
-                    break;
+            SidebarHost.BeginAnimation(WidthProperty, animation);
+            SidebarHost.Width = to;   // القيمة النهائية بعد انتهاء الحركة
 
-                case "Customers":
-                    CustomersList.ItemsSource = await CustomerService.Instance.GetAllAsync();
-                    break;
+            _sidebarExpanded = !_sidebarExpanded;
 
-                case "Products":
-                    ProductsList.ItemsSource = await ProductService.Instance.GetAllAsync();
-                    break;
+            if (_sidebarExpanded)
+            {
+                // التوسيع: النصوص تظهر بعد اكتمال الحركة
+                var timer = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(210),
+                };
+                timer.Tick += (_, _) =>
+                {
+                    timer.Stop();
+                    SetSidebarLabels(Visibility.Visible);
+                };
+                timer.Start();
+            }
+            else
+            {
+                // التقليص: النصوص تختفي فوراً
+                SetSidebarLabels(Visibility.Collapsed);
             }
         }
 
-        /// <summary>تعبئة بطاقات الإحصاءات وقائمتي المتأخرات والمخزون المنخفض.</summary>
-        private async Task LoadDashboardAsync()
+        /// <summary>إظهار/إخفاء نصوص القائمة الجانبية عند التقليص (تبقى الأيقونات).</summary>
+        private void SetSidebarLabels(Visibility visibility)
         {
-            var today = DateTime.Now;
-
-            var summary = await InvoiceService.Instance.GetMonthlySummaryAsync(today.Year, today.Month);
-            var customers = await CustomerService.Instance.GetAllAsync(activeOnly: true);
-            var lowStock = await ProductService.Instance.GetLowStockAsync();
-            var overdue = await InvoiceService.Instance.GetOverdueAsync();
-
-            MonthInvoicesValue.Text = summary.InvoiceCount.ToString("N0");
-            MonthSalesValue.Text = summary.TotalSales.ToString("N2");
-            ActiveCustomersValue.Text = customers.Count.ToString("N0");
-            LowStockValue.Text = lowStock.Count.ToString("N0");
-
-            OverdueCountText.Text = overdue.Count.ToString();
-            OverdueList.ItemsSource = overdue;
-
-            LowStockCountText.Text = lowStock.Count.ToString();
-            LowStockList.ItemsSource = lowStock;
+            NavLabelDashboard.Visibility = visibility;
+            NavLabelInvoices.Visibility = visibility;
+            NavLabelCustomers.Visibility = visibility;
+            NavLabelProducts.Visibility = visibility;
+            NavLabelReports.Visibility = visibility;
+            NavLabelSettings.Visibility = visibility;
+            LicenseText.Visibility = visibility;
+            SidebarUserName.Visibility = visibility;
+            SidebarUserRole.Visibility = visibility;
+            LogoutLabel.Visibility = visibility;
         }
+
+        // ─────────────── الشريط العلوي ───────────────
+
+        private void SearchBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter)
+                return;
+
+            string term = SearchBox.Text.Trim();
+            SelectView("invoices");
+
+            if (_pages.TryGetValue("invoices", out var page) && page is InvoicesPage invoices)
+                invoices.ApplySearch(term);
+
+            SearchBox.Clear();
+            Keyboard.ClearFocus();
+        }
+
+        private void Bell_Click(object sender, RoutedEventArgs e)
+        {
+            // الانتقال إلى الفواتير مع تصفية "صادرة" (المتأخرة ضمنها)
+            SelectView("invoices");
+            if (_pages.TryGetValue("invoices", out var page) && page is InvoicesPage invoices)
+                invoices.ShowIssuedOnly();
+        }
+
+        private void Avatar_Click(object sender, RoutedEventArgs e)
+            => SelectView("settings");
+
+        // ─────────────── أزرار النافذة ───────────────
+
+        private void TopBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+            {
+                try { DragMove(); }
+                catch { /* تجاهل */ }
+            }
+        }
+
+        private void Minimize_Click(object sender, RoutedEventArgs e)
+            => WindowState = WindowState.Minimized;
+
+        /// <summary>
+        /// تكبير بحدود منطقة العمل (وليس ملء الشاشة) — يتفادى مشاكل الإطار المخفي
+        /// عند التكبير الكامل مع WindowStyle=None.
+        /// </summary>
+        private void Maximize_Click(object sender, RoutedEventArgs e)
+        {
+            var workArea = SystemParameters.WorkArea;
+
+            if (ActualWidth >= workArea.Width - 8 && ActualHeight >= workArea.Height - 8)
+            {
+                // إرجاع للحجم الافتراضي
+                Left = workArea.Left + (workArea.Width - 1280) / 2;
+                Top = workArea.Top + (workArea.Height - 800) / 2;
+                Width = 1280;
+                Height = 800;
+            }
+            else
+            {
+                Left = workArea.Left;
+                Top = workArea.Top;
+                Width = workArea.Width;
+                Height = workArea.Height;
+            }
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+            => Close();
 
         // ─────────────── تسجيل الخروج ───────────────
 
@@ -131,19 +257,14 @@ namespace MizanPro.Windows
         {
             SessionManager.Instance.SignOut();
 
-            // فتح نافذة دخول جديدة، ثم إغلاق النافذة الحالية بعد ظهورها
-            // (حتى لا يُغلق التطبيق بالكامل بسبب وضع OnLastWindowClose)
-            var auth = new AuthWindow(false);
+            // فتح نافذة دخول جديدة قبل إغلاق الحالية (حتى لا يُغلق التطبيق كلياً)
+            var auth = new AuthWindow();
             auth.Closed += (_, _) =>
             {
                 if (SessionManager.Instance.IsAuthenticated)
-                {
                     new MainWindow().Show();
-                }
                 else
-                {
                     Application.Current.Shutdown();
-                }
             };
 
             auth.Show();
@@ -152,11 +273,10 @@ namespace MizanPro.Windows
 
         // ─────────────── دوال مساعدة ───────────────
 
-        /// <summary>اسم الدور بالعربية.</summary>
-        private static string RoleToArabic(UserRole role) => role switch
+        private static string RoleToArabic(Models.UserRole role) => role switch
         {
-            UserRole.Admin => "مدير النظام",
-            UserRole.Accountant => "محاسب",
+            Models.UserRole.Admin => "مدير",
+            Models.UserRole.Accountant => "محاسب",
             _ => "مشاهد",
         };
 
@@ -166,23 +286,6 @@ namespace MizanPro.Windows
             var culture = (CultureInfo)CultureInfo.GetCultureInfo("ar-SA").Clone();
             culture.DateTimeFormat.Calendar = new GregorianCalendar();
             return date.ToString("dddd، d MMMM yyyy", culture);
-        }
-
-        /// <summary>قسم واحد في التنقل: زر + لوحة + عنوان.</summary>
-        private sealed class NavView
-        {
-            public NavView(Button button, FrameworkElement panel, string title, string subtitle)
-            {
-                Button = button;
-                Panel = panel;
-                Title = title;
-                Subtitle = subtitle;
-            }
-
-            public Button Button { get; }
-            public FrameworkElement Panel { get; }
-            public string Title { get; }
-            public string Subtitle { get; }
         }
     }
 }

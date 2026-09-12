@@ -80,6 +80,29 @@ namespace MizanPro.SmokeTest
             Product productRestored = (await ProductService.Instance.GetAllAsync()).First(p => p.Id == 1);
             Check(cancelled && productRestored.Stock == productBefore.Stock, "إرجاع المخزون عند الإلغاء");
 
+            // ─── 4-ب) دورة حياة المسودة: لا تحجز المخزون، والإصدار يخصم، والإلغاء يعيد ───
+            Product baseProduct = (await ProductService.Instance.GetAllAsync()).First(p => p.Id == 1);
+            Invoice draft = await InvoiceService.Instance.CreateAsync(
+                customerId: 1,
+                items: new[] { new InvoiceItemInput(1, 1m, 100m) },
+                notes: null,
+                status: InvoiceStatus.Draft,
+                discount: 10m);
+
+            Product afterDraft = (await ProductService.Instance.GetAllAsync()).First(p => p.Id == 1);
+            Check(draft.Status == InvoiceStatus.Draft && draft.DueDate is null,
+                "المسودة تُنشأ بدون تاريخ استحقاق");
+            Check(draft.Discount == 10m, "خصم المسودة محفوظ (10 ر.س)");
+            Check(afterDraft.Stock == baseProduct.Stock, "المسودة لا تحجز المخزون");
+
+            await InvoiceService.Instance.UpdateStatusAsync(draft.Id, InvoiceStatus.Issued);
+            Product afterIssue = (await ProductService.Instance.GetAllAsync()).First(p => p.Id == 1);
+            Check(afterIssue.Stock == baseProduct.Stock - 1, "إصدار المسودة يخصم المخزون");
+
+            await InvoiceService.Instance.UpdateStatusAsync(draft.Id, InvoiceStatus.Cancelled);
+            Product afterDraftCancel = (await ProductService.Instance.GetAllAsync()).First(p => p.Id == 1);
+            Check(afterDraftCancel.Stock == baseProduct.Stock, "إلغاء الفاتورة الصادرة (من مسودة) يعيد المخزون");
+
             // ─── 5) الفواتير المتأخرة + الملخص الشهري ───
             List<Invoice> overdue = await InvoiceService.Instance.GetOverdueAsync();
             Check(overdue.Count >= 2, "فواتير متأخرة >= 2 (فعلي: " + overdue.Count + ")");

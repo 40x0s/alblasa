@@ -61,6 +61,39 @@ namespace MizanPro.Core.Services
         public void SignOut() => ActiveUser = null;
 
         /// <summary>
+        /// تحديث الاسم الكامل والبريد الإلكتروني للمستخدم الحالي.
+        /// يعيد خطأ عربياً عند فشل التحقق.
+        /// </summary>
+        public async Task<(bool Ok, string? Error)> UpdateProfileAsync(string fullName, string email)
+        {
+            if (ActiveUser is null)
+                return (false, "لم يتم تسجيل الدخول.");
+
+            string name = (fullName ?? string.Empty).Trim();
+            if (name.Length == 0)
+                return (false, "الاسم الكامل مطلوب.");
+
+            if (string.IsNullOrWhiteSpace(email))
+                return (false, "البريد الإلكتروني مطلوب.");
+
+            using var db = new MizanDbContext();
+
+            var user = await db.Users.FindAsync(ActiveUser.Id);
+            if (user is null)
+                return (false, "المستخدم غير موجود.");
+
+            user.FullName = name;
+            user.Email = email.Trim();
+            await db.SaveChangesAsync();
+
+            // مزامنة كائن الجلسة في الذاكرة
+            ActiveUser.FullName = user.FullName;
+            ActiveUser.Email = user.Email;
+
+            return (true, null);
+        }
+
+        /// <summary>
         /// تغيير كلمة مرور المستخدم الحالي بعد التحقق من كلمة المرور القديمة.
         /// يعيد false إذا: لم يكن مسجّلاً للدخول، أو كلمة المرور القديمة خاطئة،
         /// أو الكلمة الجديدة أقصر من 6 أحرف.

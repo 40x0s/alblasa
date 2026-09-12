@@ -64,16 +64,25 @@ namespace MizanPro.Core.Services
         ///   - توليد رقم فاتورة تلقائي بالصيغة INV-YYYY-##### (رقم تسلسلي لكل سنة)
         ///   - حساب ضريبة القيمة المضافة 15% لكل سطر
         ///   - خصم الكميات من المخزون (المبيعات تنقص، والمشتريات والمرتجعات تزيد)
-        /// تُصدَر الفاتورة فوراً بحالة "صادرة" واستحقاق بعد 30 يوماً.
+        ///   - المسودة (Draft) لا تؤثر على المخزون ولا تاريخ استحقاق لها
         /// </summary>
+        /// <param name="status">حالة الفاتورة عند الإنشاء (صادرة افتراضياً — أو مسودة).</param>
+        /// <param name="discount">خصم على مستوى الفاتورة (0..SubTotal).</param>
+        /// <param name="dueDate">تاريخ الاستحقاق (افتراضياً +30 يوماً إن كانت صادرة).</param>
         public async Task<Invoice> CreateAsync(
             int customerId,
             IReadOnlyList<InvoiceItemInput> items,
             string? notes = null,
-            InvoiceType type = InvoiceType.Sales)
+            InvoiceType type = InvoiceType.Sales,
+            InvoiceStatus status = InvoiceStatus.Issued,
+            decimal discount = 0m,
+            DateTime? dueDate = null)
         {
             if (items is null || items.Count == 0)
                 throw new InvalidOperationException("لا يمكن إنشاء فاتورة بدون أصناف.");
+
+            if (discount < 0)
+                throw new InvalidOperationException("الخصم لا يمكن أن يكون سالباً.");
 
             var createdBy = SessionManager.Instance.ActiveUser
                 ?? throw new InvalidOperationException("يجب تسجيل الدخول قبل إنشاء فاتورة.");
@@ -117,9 +126,15 @@ namespace MizanPro.Core.Services
                 Type = type,
                 CustomerId = customerId,
                 CreatedById = createdBy.Id,
-                Status = InvoiceStatus.Issued,
+                Status = status,
                 IssueDate = DateTime.Now,
-                DueDate = DateTime.Now.AddDays(30),
+
+                // المسودة لم تُصدر بعد — لا تاريخ استحقاق لها
+                DueDate = status == InvoiceStatus.Draft ? null : dueDate ?? DateTime.Now.AddDays(30),
+
+                // تاريخ السداد لا يُسجَّل إلا إذا أُنشئت الفاتورة مسددة مباشرة
+                PaidAt = status == InvoiceStatus.Paid ? DateTime.Now : null,
+
                 Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                 Discount = 0m,
             };
@@ -140,15 +155,23 @@ namespace MizanPro.Core.Services
                 invoice.SubTotal += lineTotal;
                 invoice.TaxAmount += Math.Round(lineTotal * VatRate, 2);
 
-                // تحديث المخزون حسب نوع الفاتورة
+                // تحديث المخزون حسب نوع الفاتورة — المسودات لا تؤثر على المخزون
                 Product product = products[item.ProductId];
-                int quantity = (int)item.Quantity;
-                if (type == InvoiceType.Sales)
-                    product.Stock -= quantity;
-                else
-                    product.Stock += quantity;
+                if (status != InvoiceStatus.Draft)
+                {
+                    int quantity = (int)item.Quantity;
+                    if (type == InvoiceType.Sales)
+                        product.Stock -= quantity;
+                    else
+                        product.Stock += quantity;
+                }
             }
 
+            // الخصم لا يتجاوز قيمة الأصناف
+            if (discount > invoice.SubTotal)
+                throw new InvalidOperationException("الخصم لا يمكن أن يتجاوز قيمة الأصناف.");
+
+            invoice.Discount = discount;
             invoice.Total = Math.Round(invoice.SubTotal - invoice.Discount + invoice.TaxAmount, 2);
 
             db.Invoices.Add(invoice);
@@ -159,8 +182,10 @@ namespace MizanPro.Core.Services
         }
 
         /// <summary>
-        /// تحديث حالة فاتورة. الإلغاء يعيد الكميات إلى المخزون،
-        /// والسداد يسجّل تاريخه، وإعادة فاتورة ملغاة إلى "صادرة" تعيد خصم الكميات.
+        /// تحديث حالة فاتورة. الحالات "النشطة" (صادرة/مدفوعة) هي فقط التي تحجز المخزون:
+        ///   - الانتقال من نشطة إلى غير نشطة (إلغاء/مسودة) يعيد الكميات إلى المخزون.
+        ///   - الانتقال من غير نشطة إلى نشطة (إصدار مسودة) يخصم الكميات مجدداً.
+        /// السداد يسجّل تاريخه في PaidAt.
         /// </summary>
         public async Task<bool> UpdateStatusAsync(int invoiceId, InvoiceStatus status)
         {
@@ -177,18 +202,16 @@ namespace MizanPro.Core.Services
             if (invoice.Status == status)
                 return true;
 
-            // إلغاء فاتورة صادرة/مسددة ← إرجاع الكميات إلى المخزون
-            if (status == InvoiceStatus.Cancelled &&
-                invoice.Status is InvoiceStatus.Issued or InvoiceStatus.Paid)
-            {
-                ApplyStockMovement(invoice, reverse: true);
-            }
-            // إعادة فاتورة ملغاة إلى حالة صادرة/مسددة ← خصم الكميات مجدداً
-            else if (status is InvoiceStatus.Issued or InvoiceStatus.Paid &&
-                     invoice.Status == InvoiceStatus.Cancelled)
-            {
-                ApplyStockMovement(invoice, reverse: false);
-            }
+            // هل الحالة القديمة والجديدة تختلفان في احتياط المخزون؟
+            bool wasActive = invoice.Status is InvoiceStatus.Issued or InvoiceStatus.Paid;
+            bool isActive = status is InvoiceStatus.Issued or InvoiceStatus.Paid;
+
+            if (wasActive != isActive)
+                ApplyStockMovement(invoice, reverse: !isActive);
+
+            // إصدار مسودة (أو تفعيل ملغاة): إن لم يكن لها استحقاق → 30 يوماً من تاريخ الإصدار
+            if (!wasActive && isActive && invoice.DueDate is null)
+                invoice.DueDate = invoice.IssueDate.AddDays(30);
 
             invoice.Status = status;
             invoice.PaidAt = status == InvoiceStatus.Paid ? DateTime.Now : null;
