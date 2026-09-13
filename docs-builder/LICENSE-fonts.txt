@@ -1,0 +1,10 @@
+Truetype fonts bundled for PDF generation of the workshop docs
+--------------------------------------------------------------
+fonts/DroidNaskh-Regular.ttf   Droid Arabic Naskh  — Google/Open Hand — Apache License 2.0
+fonts/DroidNaskh-Bold.ttf      Droid Arabic Naskh  — Google/Open Hand — Apache License 2.0
+fonts/DroidKufi-Bold.ttf       Droid Arabic Kufi   — Google/Open Hand — Apache License 2.0
+fonts/DejaVuSans*.ttf          DejaVu fonts        — Bitstream Vera / public-domain-like licence
+fonts/DejaVuSansMono*.ttf      DejaVu Mono         — same
+Sources: the `arabic-webfonts` npm package (open-licensed Arabic webfonts) and the
+DejaVu fonts shipped with the base image. Kept here only so that
+`docs-builder/build_guide_pdf.py` is reproducible on any machine.

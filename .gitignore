@@ -6,3 +6,5 @@ Workshop_Delivery/
 *.user
 *.suo
 *.db
+__pycache__/
+*.pyc
