@@ -72,6 +72,31 @@ def box(slide, x, y, w, h, fill=None, line=None, lw=1.0, shadow=False, radius=No
     return shp
 
 
+
+def parse_inline(t, base):
+    """**عريض** و`كود` ← مقاطع جاهزة لـ text() (para_list يتولاها بنفسه)."""
+    out, i, bold = [], 0, bool(base.get("bold"))
+    while i < len(t):
+        if t.startswith("**", i):
+            j = t.find("**", i + 2)
+            if j > i:
+                out.append((t[i + 2:j], dict(base, bold=True)))
+                i = j + 2
+                continue
+        if t[i] == "`":
+            j = t.find("`", i + 1)
+            if j > i:
+                cc = base.get("color")
+                if not base.get("keep_color"):
+                    cc = GOLD if cc == WHITE else RGBColor(0x8A, 0x5F, 0x0A)
+                out.append((t[i + 1:j], dict(base, mono=True, bold=True, color=cc)))
+                i = j + 1
+                continue
+        k = min(x for x in (t.find("**", i + 1), t.find("`", i + 1), len(t)) if x > i)
+        out.append((t[i:k], dict(base, bold=bold)))
+        i = k
+    return [(a, b) for a, b in out if a] or [(t, dict(base))]
+
 def text(slide, x, y, w, h, runs, size=18, bold=False, color=INK, align="r",
          font=AR_FONT, anchor=MSO_ANCHOR.TOP, line_spacing=1.0, space_after=6):
     """runs: str أو [(txt, dict-override)]."""
@@ -83,6 +108,13 @@ def text(slide, x, y, w, h, runs, size=18, bold=False, color=INK, align="r",
     tf.margin_top = tf.margin_bottom = 0
     if isinstance(runs, str):
         runs = [(runs, {})]
+    _exp = []
+    for txt, ov in runs:
+        base = {"size": ov.get("size", size), "color": ov.get("color", color),
+                "font": ov.get("font", font), "bold": ov.get("bold", bold),
+                "keep_color": "color" in ov}
+        _exp.extend(parse_inline(txt, base))
+    runs = _exp
     p = tf.paragraphs[0]
     p.line_spacing = line_spacing
     p.space_after = Pt(space_after)
@@ -119,24 +151,9 @@ def para_list(slide, x, y, w, h, items, size=17, color=INK, bullet="•", gap=9,
         p.space_after = Pt(gap)
         p.line_spacing = line_spacing
         mark = ("" if bullet == "" else ("–  " if lvl else bullet + "  "))
-        segs = []
-        buf = it
-        # دعم **عريض** و`كود` بشكل مبسّط
-        while "`" in buf:
-            a, rest = buf.split("`", 1)
-            if "`" not in rest:
-                break
-            b, buf = rest.split("`", 1)
-            if a:
-                segs.append((a, {}))
-            segs.append((b, {"mono": True, "color": GOLD if color == WHITE else RGBColor(0x8A, 0x5F, 0x0A), "bold": True}))
-        if "**" in buf:
-            parts = buf.split("**")
-            for i2, seg in enumerate(parts):
-                if seg:
-                    segs.append((seg, {"bold": i2 % 2 == 1}))
-        elif buf:
-            segs.append((buf, {}))
+        base = {"size": size - (1 if lvl else 0), "color": GRAY if lvl else color,
+                "font": AR_FONT}
+        segs = parse_inline(it, base)
         if mark:
             p.add_run().text = mark
             r = p.runs[0]
@@ -213,10 +230,11 @@ def slide_frame(prs, kicker, title, sub=None, dark=False):
 
 
 def notes(slide, txt):
-    slide.notes_slide.notes_text_frame.text = txt
+    slide.notes_slide.notes_text_frame.text = txt.replace("`", "").replace("**", "")
 
 
 def tag(slide, x, y, w, label, color=GOLD, fg=WHITE, size=12):
+    label = label.replace("`", "").replace("**", "")
     shp = box(slide, x, y, w, Inches(0.34), fill=color)
     tf = shp.text_frame
     tf.margin_top = tf.margin_bottom = 0
